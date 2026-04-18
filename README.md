@@ -253,7 +253,7 @@ Note: Human accuracy on FER2013 is ~65%.
 ## GPU Support
 
 AnimeGAN2 auto-detects the best available device:
-
+eg
 | Hardware | Device | Speed |
 |----------|--------|-------|
 | NVIDIA RTX 3050 | `cuda` | ~80ms/frame |
@@ -261,15 +261,9 @@ AnimeGAN2 auto-detects the best available device:
 | CPU only | `cpu` | ~2–3s/frame |
 
 ---
-
-## Presentation Tips
-
-1. **Pre-download stickers** — run the app before the presentation and trigger all 7 emotions to cache Giphy GIFs locally
-2. **Pre-download Noto emojis** — press `E` + `N` for each emotion
-3. **Use backup apps** if `ui_app.py` crashes — `backup/combined_app.py` or `backup/sticker_app.py`
-4. **Record a screen capture** as last resort if live demo fails
-5. **Good lighting** — face the window or lamp for best emotion detection
-
+## Authors
+**Swapnil Mukherjee**
+**Vaishnavi Kidav**
 ---
 
 ## Known Limitations
