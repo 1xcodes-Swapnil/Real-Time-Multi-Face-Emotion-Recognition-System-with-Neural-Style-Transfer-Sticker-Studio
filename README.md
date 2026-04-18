@@ -112,7 +112,7 @@ project/
 
 ### 1. Install Python 3.11.9
 Download and run: `https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe`
-- ✅ Check **"Add Python 3.11 to PATH"**
+- Check **"Add Python 3.11 to PATH"**
 - Click **Install Now**
 
 ### 2. Clone the repo
