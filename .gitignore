@@ -1,0 +1,84 @@
+# =========================
+# Python cache & bytecode
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# =========================
+# Virtual environments
+# =========================
+venv/
+env/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# =========================
+# Logs & debug files
+# =========================
+logs/
+*.log
+*.out
+*.err
+
+# =========================
+# Training outputs & temp
+# =========================
+output_training/
+backup/
+tmp/
+temp/
+
+# =========================
+# Models & weights (large)
+# =========================
+model/
+models/
+*.pth
+*.pt
+*.h5
+*.ckpt
+*.onnx
+
+# =========================
+# Datasets & generated media
+# =========================
+dataset/
+photos/
+videos/
+stickers/
+emojis/
+saved_emojis/
+saved_stickers/
+
+# =========================
+# Jupyter Notebook
+# =========================
+.ipynb_checkpoints/
+
+# =========================
+# System files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# IDE / Editor settings
+# =========================
+.vscode/
+.idea/
+
+# =========================
+# Environment variables
+# =========================
+.env
+.env.*
+
+# =========================
+# Misc
+# =========================
+*.zip
+*.tar
+*.gz

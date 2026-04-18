@@ -1,0 +1,475 @@
+"""
+ui_app.py  —  Tkinter dark-theme UI for MultiFace Emotion Recognition
+No PyQt5 required. Works with py -3.11 AND plain python.
+AnimeGAN2 runs on GPU (CUDA) when available.
+
+Run:
+    py -3.11 ui_app.py
+"""
+import sys, os, cv2, numpy as np, time, threading, glob
+import urllib.request, io, requests
+from PIL import Image, ImageSequence, ImageTk
+import tkinter as tk
+
+_ROOT = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, _ROOT)
+
+try:
+    import tensorflow as tf
+    _TF_OK = True
+except Exception as e:
+    print(f"[UI] TF unavailable: {e}\n[UI] Demo mode"); _TF_OK = False
+
+try:
+    from animegan_inference import apply_anime_style, is_available as anime_available
+    _ANIME_OK = anime_available()
+except Exception as e:
+    print(f"[UI] AnimeGAN: {e}"); _ANIME_OK = False; apply_anime_style = None
+
+from face_detector import FaceDetector
+from preprocessing import preprocess_face, preprocess_face_rgb, EMOTION_LABELS
+from grad_cam      import GradCAM
+
+MODEL_PATH = os.path.join(_ROOT,"models","saved_model","emotion_model.h5")
+CNN_PATH   = os.path.join(_ROOT,"models","saved_model","emotion_cnn.h5")
+GIPHY_KEY  = "api key"
+SAVE_DIR   = os.path.join(_ROOT,"saved_emojis")
+PHOTOS_DIR = os.path.join(_ROOT,"photos")
+VIDEOS_DIR = os.path.join(_ROOT,"videos")
+STICKER_DIR= os.path.join(_ROOT,"stickers")
+for d in [SAVE_DIR,PHOTOS_DIR,VIDEOS_DIR,STICKER_DIR]: os.makedirs(d,exist_ok=True)
+
+CAM_W,CAM_H = 640,480
+PANEL_W     = 260
+VIDEO_FPS   = 15
+
+EMOTION_COLORS = {
+    "angry":"#E74C3C","disgust":"#27AE60","fear":"#8E44AD",
+    "happy":"#F1C40F","neutral":"#7F8C8D","sad":"#2980B9","surprise":"#E67E22",
+}
+NOTO_CODES = {
+    "angry":["1f620","1f621"],"disgust":["1f922","1f92e"],
+    "fear":["1f628","1f631"],"happy":["1f600","1f601","1f603","1f929"],
+    "neutral":["1f610","1f636"],"sad":["1f622","1f62d"],"surprise":["1f62e","1f92f"],
+}
+GIPHY_Q = {
+    "angry":["angry emoji"],"disgust":["disgusted reaction"],
+    "fear":["scared emoji"],"happy":["happy dancing emoji"],
+    "neutral":["neutral face"],"sad":["sad crying emoji"],"surprise":["surprised emoji"],
+}
+
+BG="#1A1A2E"; BG2="#16213E"; BG3="#0F3460"
+FG="#E0E0E0"; FG2="#A0A0B0"; ACCENT="#E94560"; GREEN="#00B894"; BORDER="#2D3561"
+
+def cv2tk(frame,w,h):
+    img=cv2.resize(frame,(w,h))
+    rgb=cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
+    return ImageTk.PhotoImage(Image.fromarray(rgb))
+
+def gif_frames(src,size):
+    try:
+        gif=Image.open(src if isinstance(src,(str,os.PathLike)) else io.BytesIO(src))
+        out=[]
+        for f in ImageSequence.Iterator(gif):
+            dur=max(30,f.info.get("duration",80))
+            rgba=f.convert("RGBA").resize(size,Image.LANCZOS)
+            arr=np.array(rgba); bg=np.full_like(arr[:,:,:3],30)
+            a=arr[:,:,3:4]/255.0
+            bgr=cv2.cvtColor((arr[:,:,:3]*a+bg*(1-a)).astype(np.uint8),cv2.COLOR_RGB2BGR)
+            out.append((bgr,dur))
+        return out
+    except: return []
+
+def fetch_giphy(emotion,offset=0):
+    try:
+        q=GIPHY_Q.get(emotion.lower(),[f"{emotion} emoji"])[0]
+        r=requests.get("https://api.giphy.com/v1/gifs/search",
+            params={"q":q,"api_key":GIPHY_KEY,"limit":10,"rating":"g"},timeout=10)
+        data=r.json().get("data",[])
+        if not data: return None
+        url=data[offset%len(data)]["images"]["original"]["url"].split("?")[0]
+        gr=requests.get(url,timeout=15,headers={"User-Agent":"Mozilla/5.0"})
+        return gr.content if gr.content[:3]==b"GIF" else None
+    except: return None
+
+def fetch_noto(emotion,idx=0):
+    codes=NOTO_CODES.get(emotion.lower(),["1f610"])
+    code=codes[idx%len(codes)]
+    folder=os.path.join(STICKER_DIR,emotion.lower())
+    os.makedirs(folder,exist_ok=True)
+    path=os.path.join(folder,f"{code}.gif")
+    if not os.path.exists(path) or os.path.getsize(path)<500:
+        try:
+            urllib.request.urlretrieve(
+                f"https://fonts.gstatic.com/s/e/notoemoji/latest/{code}/512.gif",path)
+        except: return []
+    return gif_frames(path,(PANEL_W-20,PANEL_W-20))
+
+def load_model():
+    if not _TF_OK: return None,None
+    try:
+        m=tf.keras.models.load_model(MODEL_PATH,compile=False)
+        m(np.zeros((1,)+tuple(m.input_shape[1:]),dtype=np.float32),training=False)
+        print(f"[UI] Model loaded {m.input_shape}")
+        gc=None
+        try:
+            cnn=tf.keras.models.load_model(CNN_PATH,compile=False) if os.path.exists(CNN_PATH) \
+                else (m if m.input_shape[-1]==1 else None)
+            if cnn: gc=GradCAM(cnn,"res_conv4"); print("[UI] GradCAM ready")
+        except Exception as e: print(f"[UI] GradCAM: {e}")
+        return m,gc
+    except Exception as e: print(f"[UI] Model: {e}"); return None,None
+
+class CamWorker(threading.Thread):
+    def __init__(self,app):
+        super().__init__(daemon=True)
+        self.app=app; self.running=True
+        self._anime_on=False; self._gc_on=False
+        self._last_cartoon=None; self._cartoon_lock=threading.Lock()
+        self._cartoon_busy=False; self._last_req=0; self.CART_INT=1.5
+        self._last_hm=None; self._last_hmt=0; self._smoother=[]
+
+    def run(self):
+        model,gradcam=load_model()
+        detector=FaceDetector(confidence_threshold=0.5)
+        cap=cv2.VideoCapture(0)
+        cap.set(cv2.CAP_PROP_BUFFERSIZE,1)
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH,640)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT,480)
+        last_pred=0.0
+        while self.running:
+            cap.grab()
+            ret,frame=cap.read()
+            if not ret: time.sleep(0.01); continue
+            frame=cv2.flip(frame,1)
+            raw=frame.copy()
+            faces=detector.detect(frame)
+            now=time.time()
+            if now-last_pred>0.3 and faces and model is not None:
+                fx,fy=max(0,faces[0][0]),max(0,faces[0][1])
+                fw=min(faces[0][2],frame.shape[1]-fx)
+                fh=min(faces[0][3],frame.shape[0]-fy)
+                if fw>0 and fh>0:
+                    crop=frame[fy:fy+fh,fx:fx+fw]
+                    try:
+                        is_rgb=model.input_shape[-1]==3
+                        img=preprocess_face_rgb(crop) if is_rgb else preprocess_face(crop)
+                        preds=model(img,training=False)[0].numpy()
+                        self._smoother.append(preds)
+                        if len(self._smoother)>8: self._smoother.pop(0)
+                        smooth=np.mean(self._smoother,axis=0)
+                        idx=int(np.argmax(smooth))
+                        self.app.update_emotion(EMOTION_LABELS[idx],float(smooth[idx]),smooth.tolist())
+                    except: pass
+                    last_pred=now
+                    if self._gc_on and gradcam and now-self._last_hmt>1.5:
+                        try:
+                            hm=gradcam.compute(preprocess_face(crop),idx)
+                            if hm.max()>0: self._last_hm=hm
+                            self._last_hmt=now
+                        except: pass
+            display=frame.copy()
+            for (x,y,w,h) in faces:
+                fx2,fy2=max(0,x),max(0,y)
+                fw2=min(w,display.shape[1]-fx2); fh2=min(h,display.shape[0]-fy2)
+                if fw2>0 and fh2>0:
+                    if self._gc_on and self._last_hm is not None:
+                        hm=cv2.resize(self._last_hm,(fw2,fh2))
+                        roi=display[fy2:fy2+fh2,fx2:fx2+fw2]
+                        display[fy2:fy2+fh2,fx2:fx2+fw2]=cv2.addWeighted(roi,.4,hm,.6,0)
+                    cv2.rectangle(display,(fx2,fy2),(fx2+fw2,fy2+fh2),(80,200,255),2)
+            if self._anime_on and apply_anime_style and _ANIME_OK:
+                if now-self._last_req>self.CART_INT and not self._cartoon_busy:
+                    self._last_req=now; self._cartoon_busy=True
+                    _f=raw.copy()
+                    def _do(_f=_f):
+                        try:
+                            out=apply_anime_style(_f,size=512)
+                            if out is not None:
+                                out=cv2.resize(out,(_f.shape[1],_f.shape[0]))
+                                with self._cartoon_lock: self._last_cartoon=out
+                        except Exception as e: print(f"[Anime] {e}")
+                        finally: self._cartoon_busy=False
+                    threading.Thread(target=_do,daemon=True).start()
+                with self._cartoon_lock:
+                    if self._last_cartoon is not None:
+                        display=self._last_cartoon.copy()
+                        for (x,y,w,h) in faces:
+                            fx2,fy2=max(0,x),max(0,y)
+                            fw2=min(w,display.shape[1]-fx2); fh2=min(h,display.shape[0]-fy2)
+                            if fw2>0 and fh2>0:
+                                cv2.rectangle(display,(fx2,fy2),(fx2+fw2,fy2+fh2),(80,200,255),2)
+            clean=self._last_cartoon.copy() if (self._anime_on and self._last_cartoon is not None) else raw.copy()
+            self.app.update_frame(display,clean)
+        cap.release()
+
+class StickerWorker(threading.Thread):
+    def __init__(self,app):
+        super().__init__(daemon=True)
+        self.app=app; self.running=True; self.emotion="neutral"
+        self._frames=[]; self._idx=0; self._tick=time.time()
+        self._lock=threading.Lock(); self._reload=threading.Event()
+        self._offset=0; self._noto_idx=0
+
+    def set_emotion(self,e):
+        if e!=self.emotion: self.emotion=e; self._reload.set()
+
+    def refresh(self): self._offset+=1; self._reload.set()
+
+    def next_noto(self):
+        self._noto_idx+=1
+        threading.Thread(target=self._load_noto,daemon=True).start()
+
+    def _load_giphy(self):
+        raw=fetch_giphy(self.emotion,self._offset)
+        if raw:
+            f=gif_frames(raw,(PANEL_W-20,PANEL_W-20))
+            if f:
+                with self._lock: self._frames=f; self._idx=0
+                return
+        folder=os.path.join(STICKER_DIR,self.emotion.lower())
+        gifs=sorted(glob.glob(os.path.join(folder,"*.gif")))
+        if gifs:
+            f=gif_frames(gifs[self._offset%len(gifs)],(PANEL_W-20,PANEL_W-20))
+            with self._lock: self._frames=f; self._idx=0
+
+    def _load_noto(self):
+        f=fetch_noto(self.emotion,self._noto_idx)
+        if f:
+            self.app.update_noto(f[len(f)//2][0])
+
+    def run(self):
+        threading.Thread(target=self._load_giphy,daemon=True).start()
+        threading.Thread(target=self._load_noto,daemon=True).start()
+        while self.running:
+            if self._reload.wait(timeout=0.05):
+                self._reload.clear()
+                threading.Thread(target=self._load_giphy,daemon=True).start()
+                threading.Thread(target=self._load_noto,daemon=True).start()
+            with self._lock:
+                if self._frames:
+                    bgr,dur=self._frames[self._idx]
+                    self.app.update_sticker(bgr)
+                    if (time.time()-self._tick)*1000>=dur:
+                        self._idx=(self._idx+1)%len(self._frames)
+                        self._tick=time.time()
+
+class App:
+    def __init__(self,root):
+        self.root=root; self.root.title("Emotion Recognition")
+        self.root.configure(bg=BG); self.root.resizable(False,False)
+        self.cur_emotion="neutral"; self.cur_conf=0.0
+        self._anime_on=False; self._gc_on=False; self._last_clean=None
+        self._cd_active=False; self._cd_start=0.0; self._cd_secs=3
+        self._burst_count=0; self._burst_total=0
+        self._vid_writer=None; self._vid_rec=False
+        self._vid_start=0.0; self._vid_path=None; self._vid_frames=0
+        self._pending_frame=None; self._pending_emotion=None
+        self._pending_sticker=None; self._pending_noto=None
+        self._fps_times=[]
+        self._build_ui(); self._start_workers()
+        self.root.after(33,self._tick)
+
+    def _build_ui(self):
+        top=tk.Frame(self.root,bg=BG,pady=6); top.pack(fill="x",padx=12)
+        tk.Label(top,text="Emotion Recognition",font=("Segoe UI",16,"bold"),bg=BG,fg=FG).pack(side="left")
+        self.lbl_conf=tk.Label(top,text="0%",font=("Segoe UI",13),bg=BG,fg=FG2); self.lbl_conf.pack(side="right",padx=4)
+        self.lbl_emotion=tk.Label(top,text="Neutral",font=("Segoe UI",13,"bold"),bg=BG3,fg=ACCENT,padx=14,pady=4)
+        self.lbl_emotion.pack(side="right",padx=6)
+
+        content=tk.Frame(self.root,bg=BG); content.pack(fill="both",padx=12,pady=4)
+
+        cam_card=tk.Frame(content,bg=BG2,highlightbackground=BORDER,highlightthickness=1)
+        cam_card.grid(row=0,column=0,padx=(0,8),pady=4,sticky="nsew")
+        tk.Label(cam_card,text="LIVE FEED",font=("Segoe UI",8),bg=BG2,fg=FG2).pack(anchor="w",padx=8,pady=(6,2))
+        self.cam_lbl=tk.Label(cam_card,bg="#000"); self.cam_lbl.pack(padx=8,pady=(0,8))
+
+        btn_row=tk.Frame(cam_card,bg=BG2); btn_row.pack(fill="x",padx=8,pady=(0,8))
+        self.btn_anime=self._tbtn(btn_row,"AnimeGAN [A]",self._toggle_anime)
+        self.btn_gc=self._tbtn(btn_row,"Grad-CAM [G]",self._toggle_gc)
+        self.btn_photo=self._abtn(btn_row,"Photo [P]",self._photo)
+        self.btn_burst=self._abtn(btn_row,"Burst [B]",self._burst)
+        self.btn_video=self._tbtn(btn_row,"Rec [V]",self._toggle_video)
+        for b in [self.btn_anime,self.btn_gc,self.btn_photo,self.btn_burst,self.btn_video]:
+            b.pack(side="left",padx=3)
+
+        right=tk.Frame(content,bg=BG); right.grid(row=0,column=1,sticky="nsew")
+
+        bars_card=tk.Frame(right,bg=BG2,highlightbackground=BORDER,highlightthickness=1)
+        bars_card.pack(fill="x",pady=(4,6))
+        tk.Label(bars_card,text="EMOTION CONFIDENCE",font=("Segoe UI",8),bg=BG2,fg=FG2).pack(anchor="w",padx=8,pady=(6,2))
+        self.bars={}
+        for e in EMOTION_LABELS:
+            row=tk.Frame(bars_card,bg=BG2); row.pack(fill="x",padx=8,pady=2)
+            tk.Label(row,text=e.capitalize(),width=9,anchor="w",font=("Segoe UI",9),bg=BG2,fg=FG2).pack(side="left")
+            cv=tk.Canvas(row,height=14,bg=BG3,bd=0,highlightthickness=0); cv.pack(side="left",fill="x",expand=True)
+            pct=tk.Label(row,text="0%",width=4,anchor="e",font=("Segoe UI",9),bg=BG2,fg=FG2); pct.pack(side="left",padx=(4,0))
+            self.bars[e]=(cv,pct)
+        tk.Frame(bars_card,bg=BG2,height=4).pack()
+
+        bot_row=tk.Frame(right,bg=BG); bot_row.pack(fill="x",pady=4)
+
+        def panel(parent,title,badge,badge_col):
+            c=tk.Frame(parent,bg=BG2,highlightbackground=BORDER,highlightthickness=1)
+            c.pack(side="left",padx=(0,6))
+            h=tk.Frame(c,bg=BG2); h.pack(fill="x",padx=8,pady=(6,2))
+            tk.Label(h,text=title,font=("Segoe UI",8),bg=BG2,fg=FG2).pack(side="left")
+            tk.Label(h,text=badge,font=("Segoe UI",8,"bold"),bg=BG3,fg=badge_col,padx=6).pack(side="right")
+            return c
+
+        stk_card=panel(bot_row,"STICKER","Giphy",GREEN)
+        self.stk_lbl=tk.Label(stk_card,bg=BG3,width=PANEL_W-20,height=PANEL_W-20)
+        self.stk_lbl.pack(padx=8,pady=(0,4))
+        self._abtn(stk_card,"↻ Refresh [R]",self._refresh_sticker).pack(fill="x",padx=8,pady=(0,8))
+
+        emo_card=panel(bot_row,"EMOJI","Noto","#64B5F6")
+        self.emo_lbl=tk.Label(emo_card,bg=BG3,text="Press N",fg=FG2,font=("Segoe UI",10),width=PANEL_W-20,height=PANEL_W-20)
+        self.emo_lbl.pack(padx=8,pady=(0,4))
+        self._abtn(emo_card,"↻ Next [N]",self._next_noto).pack(fill="x",padx=8,pady=(0,8))
+
+        self.status=tk.Label(self.root,text="Starting...",font=("Segoe UI",9),bg=BG,fg=FG2,anchor="w")
+        self.status.pack(fill="x",padx=14,pady=(0,8))
+
+        for k,fn in [("a",self._toggle_anime),("g",self._toggle_gc),
+                     ("r",self._refresh_sticker),("n",self._next_noto),
+                     ("p",self._photo),("b",self._burst),
+                     ("v",self._toggle_video),("s",self._save_snap)]:
+            self.root.bind(f"<Key-{k}>",lambda e,f=fn: f())
+            self.root.bind(f"<Key-{k.upper()}>",lambda e,f=fn: f())
+        self.root.bind("<Escape>",lambda e: self._quit())
+        self.root.bind("<Key-q>",lambda e: self._quit())
+        self.root.protocol("WM_DELETE_WINDOW",self._quit)
+        self._cam_img=self._stk_img=self._emo_img=None
+
+    def _tbtn(self,p,t,c): return tk.Button(p,text=t,command=c,font=("Segoe UI",8),bg=BG3,fg=FG2,activebackground=BORDER,activeforeground=FG,relief="flat",bd=0,padx=8,pady=4,cursor="hand2")
+    def _abtn(self,p,t,c): return tk.Button(p,text=t,command=c,font=("Segoe UI",8),bg=BG3,fg=FG,activebackground=ACCENT,activeforeground="#fff",relief="flat",bd=0,padx=8,pady=4,cursor="hand2")
+
+    def _start_workers(self):
+        self.cam_worker=CamWorker(self); self.stk_worker=StickerWorker(self)
+        self.cam_worker.start(); self.stk_worker.start()
+        self.status.config(text="Camera starting...")
+
+    def update_frame(self,display,clean): self._pending_frame=(display,clean)
+    def update_emotion(self,emo,conf,probs): self._pending_emotion=(emo,conf,probs)
+    def update_sticker(self,frame): self._pending_sticker=frame
+    def update_noto(self,frame): self._pending_noto=frame
+
+    def _tick(self):
+        if self._pending_frame:
+            display,clean=self._pending_frame; self._pending_frame=None
+            self._last_clean=clean
+            try:
+                img=cv2tk(display,CAM_W,CAM_H); self._cam_img=img; self.cam_lbl.config(image=img)
+            except: pass
+            if self._vid_rec and self._vid_writer and clean is not None:
+                elapsed=time.time()-self._vid_start
+                if int(elapsed*VIDEO_FPS)>self._vid_frames:
+                    self._vid_writer.write(cv2.resize(clean,(CAM_W,CAM_H))); self._vid_frames+=1
+                if elapsed>=30: self._stop_video()
+
+        if self._pending_emotion:
+            emo,conf,probs=self._pending_emotion; self._pending_emotion=None
+            if emo!=self.cur_emotion:
+                self.cur_emotion=emo; self.stk_worker.set_emotion(emo)
+            self.cur_conf=conf
+            col=EMOTION_COLORS.get(emo.lower(),ACCENT)
+            self.lbl_emotion.config(text=emo.capitalize(),fg=col)
+            self.lbl_conf.config(text=f"{conf*100:.0f}%")
+            for i,e in enumerate(EMOTION_LABELS):
+                v=probs[i] if i<len(probs) else 0
+                cv,pct=self.bars[e]; w=cv.winfo_width(); cv.delete("all")
+                if w>0:
+                    fw=max(2,int(w*v)); ec=EMOTION_COLORS.get(e.lower(),ACCENT)
+                    cv.create_rectangle(0,1,fw,13,fill=ec,outline="")
+                pct.config(text=f"{v*100:.0f}%")
+            now=time.time(); self._fps_times.append(now)
+            self._fps_times=[t for t in self._fps_times if now-t<1.0]
+            self.status.config(text=f"Running  |  FPS: {len(self._fps_times)}")
+
+        if self._pending_sticker is not None:
+            f=self._pending_sticker; self._pending_sticker=None
+            try:
+                img=cv2tk(f,PANEL_W-20,PANEL_W-20); self._stk_img=img
+                self.stk_lbl.config(image=img,text="")
+            except: pass
+
+        if self._pending_noto is not None:
+            f=self._pending_noto; self._pending_noto=None
+            try:
+                img=cv2tk(f,PANEL_W-20,PANEL_W-20); self._emo_img=img
+                self.emo_lbl.config(image=img,text="")
+            except: pass
+
+        if self._cd_active:
+            rem=self._cd_secs-int(time.time()-self._cd_start)
+            if rem>0: self.status.config(text=f"Photo in {rem}... smile!")
+            else: self._cd_active=False; self._take_photo()
+
+        if self._vid_rec:
+            self.status.config(text=f"REC  {time.time()-self._vid_start:.0f}s  |  Press V to stop")
+
+        self.root.after(33,self._tick)
+
+    def _toggle_anime(self):
+        if not _ANIME_OK: self.status.config(text="AnimeGAN not available"); return
+        self._anime_on=not self._anime_on; self.cam_worker._anime_on=self._anime_on
+        self.btn_anime.config(bg=ACCENT if self._anime_on else BG3,fg="#fff" if self._anime_on else FG2)
+        gpu="GPU" if __import__("torch").cuda.is_available() else "CPU"
+        self.status.config(text=f"AnimeGAN {'ON — '+gpu if self._anime_on else 'OFF'}")
+
+    def _toggle_gc(self):
+        self._gc_on=not self._gc_on; self.cam_worker._gc_on=self._gc_on
+        self.btn_gc.config(bg=ACCENT if self._gc_on else BG3,fg="#fff" if self._gc_on else FG2)
+        self.status.config(text=f"Grad-CAM {'ON' if self._gc_on else 'OFF'}")
+
+    def _refresh_sticker(self): self.stk_worker.refresh(); self.status.config(text="Sticker refreshed")
+    def _next_noto(self): self.stk_worker.next_noto()
+
+    def _photo(self):
+        if not self._cd_active:
+            self._cd_active=True; self._cd_start=time.time()
+            self._cd_secs=3; self._burst_count=1; self._burst_total=0
+
+    def _burst(self):
+        if not self._cd_active:
+            self._cd_active=True; self._cd_start=time.time()
+            self._cd_secs=3; self._burst_count=3; self._burst_total=3
+
+    def _take_photo(self):
+        frame=self._last_clean
+        if frame is None: return
+        ts=int(time.time()); n=self._burst_total-self._burst_count+1
+        fname=os.path.join(PHOTOS_DIR,f"group_{n}of{self._burst_total}_{ts}.png" if self._burst_total>0 else f"anime_photo_{ts}.png")
+        cv2.imwrite(fname,frame); self._burst_count-=1
+        if self._burst_count>0:
+            self._cd_active=True; self._cd_start=time.time(); self._cd_secs=2
+        else:
+            self.status.config(text=f"Saved: {os.path.basename(fname)}")
+            print(f"[Photo] {fname}")
+
+    def _toggle_video(self):
+        if not self._vid_rec:
+            ts=int(time.time()); self._vid_path=os.path.join(VIDEOS_DIR,f"emotion_video_{ts}.avi")
+            self._vid_writer=cv2.VideoWriter(self._vid_path,cv2.VideoWriter_fourcc(*"XVID"),VIDEO_FPS,(CAM_W,CAM_H))
+            self._vid_rec=True; self._vid_start=time.time(); self._vid_frames=0
+            self.btn_video.config(bg=ACCENT,fg="#fff"); self.status.config(text="Recording... Press V to stop")
+        else: self._stop_video()
+
+    def _stop_video(self):
+        if self._vid_writer: self._vid_writer.release(); self._vid_writer=None
+        self._vid_rec=False; self.btn_video.config(bg=BG3,fg=FG2)
+        self.status.config(text=f"Video saved: {os.path.basename(self._vid_path)}")
+
+    def _save_snap(self):
+        if self._last_clean is not None:
+            fname=os.path.join(SAVE_DIR,f"snap_{int(time.time())}.png")
+            cv2.imwrite(fname,self._last_clean); self.status.config(text=f"Saved: {os.path.basename(fname)}")
+
+    def _quit(self):
+        self.cam_worker.running=False; self.stk_worker.running=False
+        if self._vid_writer: self._vid_writer.release()
+        self.root.destroy()
+
+if __name__=="__main__":
+    root=tk.Tk(); root.configure(bg=BG)
+    app=App(root); root.mainloop()

@@ -1,0 +1,364 @@
+==================================================
+Training architecture : CNN
+Epochs: 50  |  Batch: 64  |  LR: 0.001
+==================================================
+
+Found 5537 images belonging to 6 classes.
+Found 5537 images belonging to 6 classes.
+[Train] Detected 6 classes: ['angry', 'disgust', 'fear', 'happy', 'neutral', 'sad']
+I0000 00:00:1773498346.668420    7680 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
+To enable the following instructions: SSE3 SSE4.1 SSE4.2 AVX AVX2 AVX_VNNI FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+WARNING:tensorflow:TensorFlow GPU support is not available on native Windows for TensorFlow >= 2.11. Even if CUDA/cuDNN are installed, GPU will not be used. Please use WSL2 or the TensorFlow-DirectML plugin.
+Model: "EmotionCNN"
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┓
+┃ Layer (type)                         ┃ Output Shape                ┃         Param # ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━┩
+│ conv2d_0 (Conv2D)                    │ (None, 48, 48, 32)          │             320 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ batch_normalization                  │ (None, 48, 48, 32)          │             128 │
+│ (BatchNormalization)                 │                             │                 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ conv2d_1 (Conv2D)                    │ (None, 48, 48, 32)          │           9,248 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ batch_normalization_1                │ (None, 48, 48, 32)          │             128 │
+│ (BatchNormalization)                 │                             │                 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ max_pooling2d (MaxPooling2D)         │ (None, 24, 24, 32)          │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ dropout (Dropout)                    │ (None, 24, 24, 32)          │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ conv2d_2 (Conv2D)                    │ (None, 24, 24, 64)          │          18,496 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ batch_normalization_2                │ (None, 24, 24, 64)          │             256 │
+│ (BatchNormalization)                 │                             │                 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ conv2d_3 (Conv2D)                    │ (None, 24, 24, 64)          │          36,928 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ batch_normalization_3                │ (None, 24, 24, 64)          │             256 │
+│ (BatchNormalization)                 │                             │                 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ max_pooling2d_1 (MaxPooling2D)       │ (None, 12, 12, 64)          │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ dropout_1 (Dropout)                  │ (None, 12, 12, 64)          │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ conv2d_4 (Conv2D)                    │ (None, 12, 12, 128)         │          73,856 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ batch_normalization_4                │ (None, 12, 12, 128)         │             512 │
+│ (BatchNormalization)                 │                             │                 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ max_pooling2d_2 (MaxPooling2D)       │ (None, 6, 6, 128)           │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ dropout_2 (Dropout)                  │ (None, 6, 6, 128)           │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ flatten (Flatten)                    │ (None, 4608)                │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ max_pooling2d_2 (MaxPooling2D)       │ (None, 6, 6, 128)           │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ max_pooling2d_2 (MaxPooling2D)       │ (None, 6, 6, 128)           │               0 │
+│ max_pooling2d_2 (MaxPooling2D)       │ (None, 6, 6, 128)           │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ dropout_2 (Dropout)                  │ (None, 6, 6, 128)           │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ flatten (Flatten)                    │ (None, 4608)                │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ dense (Dense)                        │ (None, 256)                 │       1,179,904 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ dropout_3 (Dropout)                  │ (None, 256)                 │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ dense_1 (Dense)                      │ (None, 6)                   │           1,542 │
+└──────────────────────────────────────┴─────────────────────────────┴─────────────────┘
+ Total params: 1,321,574 (5.04 MB)
+ Trainable params: 1,320,934 (5.04 MB)
+ Non-trainable params: 640 (2.50 KB)
+Epoch 1/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 163ms/step - accuracy: 0.2509 - loss: 3.0724
+Epoch 1: val_accuracy improved from None to 0.02005, saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`.
+
+Epoch 1: finished saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+87/87 ━━━━━━━━━━━━━━━━━━━━ 20s 199ms/step - accuracy: 0.2745 - loss: 2.0903 - val_accuracy: 0.0200 - val_loss: 5.4019 - learning_rate: 0.0010
+Epoch 2/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 159ms/step - accuracy: 0.3152 - loss: 1.6282
+Epoch 2: val_accuracy improved from 0.02005 to 0.02095, saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`. 
+
+Epoch 2: finished saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+87/87 ━━━━━━━━━━━━━━━━━━━━ 17s 197ms/step - accuracy: 0.3105 - loss: 1.6351 - val_accuracy: 0.0209 - val_loss: 5.8892 - learning_rate: 0.0010
+Epoch 3/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 160ms/step - accuracy: 0.3159 - loss: 1.6333 
+Epoch 3: val_accuracy improved from 0.02095 to 0.08127, saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`.
+
+Epoch 3: finished saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+87/87 ━━━━━━━━━━━━━━━━━━━━ 17s 192ms/step - accuracy: 0.3153 - loss: 1.6317 - val_accuracy: 0.0813 - val_loss: 4.7514 - learning_rate: 0.0010
+Epoch 4/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 163ms/step - accuracy: 0.3220 - loss: 1.5891 
+Epoch 4: val_accuracy improved from 0.08127 to 0.18873, saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`.
+
+Epoch 4: finished saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+87/87 ━━━━━━━━━━━━━━━━━━━━ 18s 201ms/step - accuracy: 0.3202 - loss: 1.6053 - val_accuracy: 0.1887 - val_loss: 2.5020 - learning_rate: 0.0010
+Epoch 5/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 161ms/step - accuracy: 0.3286 - loss: 1.6058 
+Epoch 5: val_accuracy improved from 0.18873 to 0.30359, saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`.
+
+Epoch 5: finished saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+87/87 ━━━━━━━━━━━━━━━━━━━━ 17s 197ms/step - accuracy: 0.3327 - loss: 1.6026 - val_accuracy: 0.3036 - val_loss: 1.8595 - learning_rate: 0.0010
+Epoch 6/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 154ms/step - accuracy: 0.3210 - loss: 1.5849 
+Epoch 6: val_accuracy improved from 0.30359 to 0.32418, saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`.
+
+Epoch 6: finished saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+87/87 ━━━━━━━━━━━━━━━━━━━━ 16s 188ms/step - accuracy: 0.3262 - loss: 1.5871 - val_accuracy: 0.3242 - val_loss: 1.7659 - learning_rate: 0.0010
+Epoch 7/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 153ms/step - accuracy: 0.3284 - loss: 1.5772 
+Epoch 7: val_accuracy improved from 0.32418 to 0.35489, saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`.
+
+Epoch 7: finished saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+87/87 ━━━━━━━━━━━━━━━━━━━━ 16s 187ms/step - accuracy: 0.3267 - loss: 1.5795 - val_accuracy: 0.3549 - val_loss: 1.5464 - learning_rate: 0.0010
+Epoch 8/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 160ms/step - accuracy: 0.3245 - loss: 1.5787 
+Epoch 8: val_accuracy did not improve from 0.35489
+87/87 ━━━━━━━━━━━━━━━━━━━━ 17s 192ms/step - accuracy: 0.3316 - loss: 1.5714 - val_accuracy: 0.3394 - val_loss: 1.6687 - learning_rate: 0.0010
+Epoch 9/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 155ms/step - accuracy: 0.3379 - loss: 1.5513 
+Epoch 9: val_accuracy improved from 0.35489 to 0.38776, saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`.
+
+Epoch 9: finished saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+87/87 ━━━━━━━━━━━━━━━━━━━━ 16s 187ms/step - accuracy: 0.3529 - loss: 1.5332 - val_accuracy: 0.3878 - val_loss: 1.4414 - learning_rate: 0.0010
+Epoch 10/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 155ms/step - accuracy: 0.3765 - loss: 1.5087 
+Epoch 10: val_accuracy improved from 0.38776 to 0.40961, saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`.
+
+Epoch 10: finished saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+87/87 ━━━━━━━━━━━━━━━━━━━━ 16s 187ms/step - accuracy: 0.3710 - loss: 1.5165 - val_accuracy: 0.4096 - val_loss: 1.4550 - learning_rate: 0.0010
+Epoch 11/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 153ms/step - accuracy: 0.3750 - loss: 1.4973 
+Epoch 11: val_accuracy improved from 0.40961 to 0.41358, saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`.
+
+Epoch 11: finished saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+87/87 ━━━━━━━━━━━━━━━━━━━━ 16s 185ms/step - accuracy: 0.3778 - loss: 1.4987 - val_accuracy: 0.4136 - val_loss: 1.4059 - learning_rate: 0.0010
+Epoch 12/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 155ms/step - accuracy: 0.3939 - loss: 1.4620 
+Epoch 12: val_accuracy did not improve from 0.41358
+87/87 ━━━━━━━━━━━━━━━━━━━━ 16s 186ms/step - accuracy: 0.3869 - loss: 1.4741 - val_accuracy: 0.4130 - val_loss: 1.4139 - learning_rate: 0.0010
+Epoch 13/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 156ms/step - accuracy: 0.4166 - loss: 1.4593 
+Epoch 13: val_accuracy improved from 0.41358 to 0.42044, saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`.
+
+Epoch 13: finished saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+87/87 ━━━━━━━━━━━━━━━━━━━━ 16s 188ms/step - accuracy: 0.4065 - loss: 1.4689 - val_accuracy: 0.4204 - val_loss: 1.4163 - learning_rate: 0.0010
+Epoch 14/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 154ms/step - accuracy: 0.4044 - loss: 1.4349 
+Epoch 14: val_accuracy improved from 0.42044 to 0.47535, saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`.
+
+Epoch 14: finished saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+87/87 ━━━━━━━━━━━━━━━━━━━━ 16s 187ms/step - accuracy: 0.4060 - loss: 1.4310 - val_accuracy: 0.4753 - val_loss: 1.3051 - learning_rate: 0.0010
+Epoch 15/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 155ms/step - accuracy: 0.4261 - loss: 1.4268 
+Epoch 15: val_accuracy improved from 0.47535 to 0.48871, saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`.
+
+Epoch 15: finished saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+87/87 ━━━━━━━━━━━━━━━━━━━━ 17s 189ms/step - accuracy: 0.4297 - loss: 1.4140 - val_accuracy: 0.4887 - val_loss: 1.3164 - learning_rate: 0.0010
+Epoch 16/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 152ms/step - accuracy: 0.4192 - loss: 1.4052 
+Epoch 16: val_accuracy did not improve from 0.48871
+87/87 ━━━━━━━━━━━━━━━━━━━━ 16s 187ms/step - accuracy: 0.4230 - loss: 1.3956 - val_accuracy: 0.4884 - val_loss: 1.2914 - learning_rate: 0.0010
+Epoch 17/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 154ms/step - accuracy: 0.4335 - loss: 1.3937 
+Epoch 17: val_accuracy improved from 0.48871 to 0.49919, saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`.
+
+Epoch 17: finished saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+87/87 ━━━━━━━━━━━━━━━━━━━━ 16s 186ms/step - accuracy: 0.4389 - loss: 1.3789 - val_accuracy: 0.4992 - val_loss: 1.2377 - learning_rate: 0.0010
+Epoch 18/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 154ms/step - accuracy: 0.4455 - loss: 1.3660 
+Epoch 18: val_accuracy did not improve from 0.49919
+87/87 ━━━━━━━━━━━━━━━━━━━━ 16s 186ms/step - accuracy: 0.4419 - loss: 1.3741 - val_accuracy: 0.4907 - val_loss: 1.2583 - learning_rate: 0.0010
+Epoch 19/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 153ms/step - accuracy: 0.4424 - loss: 1.3755 
+Epoch 19: val_accuracy did not improve from 0.49919
+87/87 ━━━━━━━━━━━━━━━━━━━━ 16s 185ms/step - accuracy: 0.4396 - loss: 1.3706 - val_accuracy: 0.4864 - val_loss: 1.3136 - learning_rate: 0.0010
+Epoch 20/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 152ms/step - accuracy: 0.4671 - loss: 1.3367 
+Epoch 20: val_accuracy did not improve from 0.49919
+87/87 ━━━━━━━━━━━━━━━━━━━━ 16s 183ms/step - accuracy: 0.4479 - loss: 1.3625 - val_accuracy: 0.4947 - val_loss: 1.3358 - learning_rate: 0.0010
+Epoch 21/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 153ms/step - accuracy: 0.4526 - loss: 1.3348 
+Epoch 21: val_accuracy improved from 0.49919 to 0.50623, saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`.
+
+Epoch 21: finished saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+87/87 ━━━━━━━━━━━━━━━━━━━━ 16s 185ms/step - accuracy: 0.4539 - loss: 1.3356 - val_accuracy: 0.5062 - val_loss: 1.2356 - learning_rate: 0.0010
+Epoch 22/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 152ms/step - accuracy: 0.4510 - loss: 1.3509 
+Epoch 22: val_accuracy improved from 0.50623 to 0.50804, saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`.
+
+Epoch 22: finished saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+87/87 ━━━━━━━━━━━━━━━━━━━━ 16s 185ms/step - accuracy: 0.4555 - loss: 1.3358 - val_accuracy: 0.5080 - val_loss: 1.2186 - learning_rate: 0.0010
+Epoch 23/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 153ms/step - accuracy: 0.4508 - loss: 1.3256 
+Epoch 23: val_accuracy did not improve from 0.50804
+87/87 ━━━━━━━━━━━━━━━━━━━━ 16s 184ms/step - accuracy: 0.4495 - loss: 1.3283 - val_accuracy: 0.5033 - val_loss: 1.2657 - learning_rate: 0.0010
+Epoch 24/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 152ms/step - accuracy: 0.4525 - loss: 1.3176 
+Epoch 24: val_accuracy improved from 0.50804 to 0.52267, saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`.
+
+Epoch 24: finished saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+87/87 ━━━━━━━━━━━━━━━━━━━━ 16s 184ms/step - accuracy: 0.4483 - loss: 1.3357 - val_accuracy: 0.5227 - val_loss: 1.2140 - learning_rate: 0.0010
+Epoch 25/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 153ms/step - accuracy: 0.4696 - loss: 1.3191 
+Epoch 25: val_accuracy improved from 0.52267 to 0.53802, saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`.
+
+Epoch 25: finished saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+87/87 ━━━━━━━━━━━━━━━━━━━━ 16s 185ms/step - accuracy: 0.4683 - loss: 1.3182 - val_accuracy: 0.5380 - val_loss: 1.1828 - learning_rate: 0.0010
+Epoch 26/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 159ms/step - accuracy: 0.4594 - loss: 1.3267 
+Epoch 26: val_accuracy did not improve from 0.53802
+87/87 ━━━━━━━━━━━━━━━━━━━━ 17s 190ms/step - accuracy: 0.4589 - loss: 1.3259 - val_accuracy: 0.5178 - val_loss: 1.2120 - learning_rate: 0.0010
+Epoch 27/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 156ms/step - accuracy: 0.4764 - loss: 1.2936 
+Epoch 27: val_accuracy did not improve from 0.53802
+87/87 ━━━━━━━━━━━━━━━━━━━━ 17s 193ms/step - accuracy: 0.4820 - loss: 1.2882 - val_accuracy: 0.5326 - val_loss: 1.1600 - learning_rate: 0.0010
+Epoch 28/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 153ms/step - accuracy: 0.4837 - loss: 1.2813 
+Epoch 28: val_accuracy did not improve from 0.53802
+87/87 ━━━━━━━━━━━━━━━━━━━━ 16s 185ms/step - accuracy: 0.4766 - loss: 1.2963 - val_accuracy: 0.5131 - val_loss: 1.2235 - learning_rate: 0.0010
+Epoch 29/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 154ms/step - accuracy: 0.4770 - loss: 1.2769 
+Epoch 29: val_accuracy did not improve from 0.53802
+87/87 ━━━━━━━━━━━━━━━━━━━━ 16s 186ms/step - accuracy: 0.4714 - loss: 1.2858 - val_accuracy: 0.5234 - val_loss: 1.1826 - learning_rate: 0.0010
+Epoch 30/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 153ms/step - accuracy: 0.4779 - loss: 1.2899 
+Epoch 30: val_accuracy improved from 0.53802 to 0.54127, saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`.
+
+Epoch 30: finished saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+87/87 ━━━━━━━━━━━━━━━━━━━━ 16s 185ms/step - accuracy: 0.4837 - loss: 1.2820 - val_accuracy: 0.5413 - val_loss: 1.1759 - learning_rate: 0.0010
+Epoch 31/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 157ms/step - accuracy: 0.4786 - loss: 1.2880 
+Epoch 31: val_accuracy did not improve from 0.54127
+87/87 ━━━━━━━━━━━━━━━━━━━━ 16s 188ms/step - accuracy: 0.4766 - loss: 1.2847 - val_accuracy: 0.5059 - val_loss: 1.2480 - learning_rate: 0.0010
+Epoch 32/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 152ms/step - accuracy: 0.4861 - loss: 1.2897 
+Epoch 32: val_accuracy improved from 0.54127 to 0.54325, saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`.
+
+Epoch 32: finished saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+87/87 ━━━━━━━━━━━━━━━━━━━━ 16s 184ms/step - accuracy: 0.4961 - loss: 1.2656 - val_accuracy: 0.5433 - val_loss: 1.1424 - learning_rate: 0.0010
+Epoch 33/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 154ms/step - accuracy: 0.4823 - loss: 1.2655 
+Epoch 33: val_accuracy improved from 0.54325 to 0.55138, saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`.
+
+Epoch 33: finished saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+87/87 ━━━━━━━━━━━━━━━━━━━━ 16s 187ms/step - accuracy: 0.4851 - loss: 1.2701 - val_accuracy: 0.5514 - val_loss: 1.1216 - learning_rate: 0.0010
+Epoch 34/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 152ms/step - accuracy: 0.4955 - loss: 1.2558 
+Epoch 34: val_accuracy improved from 0.55138 to 0.55915, saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`.
+
+Epoch 34: finished saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+87/87 ━━━━━━━━━━━━━━━━━━━━ 17s 189ms/step - accuracy: 0.4972 - loss: 1.2669 - val_accuracy: 0.5591 - val_loss: 1.1043 - learning_rate: 0.0010
+Epoch 35/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 156ms/step - accuracy: 0.4883 - loss: 1.2844 
+Epoch 35: val_accuracy did not improve from 0.55915
+87/87 ━━━━━━━━━━━━━━━━━━━━ 16s 188ms/step - accuracy: 0.4911 - loss: 1.2658 - val_accuracy: 0.5557 - val_loss: 1.1225 - learning_rate: 0.0010
+Epoch 36/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 153ms/step - accuracy: 0.4901 - loss: 1.2776 
+Epoch 36: val_accuracy did not improve from 0.55915
+87/87 ━━━━━━━━━━━━━━━━━━━━ 16s 184ms/step - accuracy: 0.4914 - loss: 1.2567 - val_accuracy: 0.5321 - val_loss: 1.1735 - learning_rate: 0.0010
+Epoch 37/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 153ms/step - accuracy: 0.4916 - loss: 1.2469 
+Epoch 37: val_accuracy improved from 0.55915 to 0.55987, saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`.
+
+Epoch 37: finished saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+87/87 ━━━━━━━━━━━━━━━━━━━━ 16s 185ms/step - accuracy: 0.4864 - loss: 1.2523 - val_accuracy: 0.5599 - val_loss: 1.1313 - learning_rate: 0.0010
+Epoch 38/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 155ms/step - accuracy: 0.4908 - loss: 1.2345 
+Epoch 38: val_accuracy did not improve from 0.55987
+87/87 ━━━━━━━━━━━━━━━━━━━━ 16s 188ms/step - accuracy: 0.4970 - loss: 1.2380 - val_accuracy: 0.5517 - val_loss: 1.1131 - learning_rate: 0.0010
+Epoch 39/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 1s/step - accuracy: 0.5002 - loss: 1.2373    
+Epoch 39: val_accuracy improved from 0.55987 to 0.56998, saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`.
+
+Epoch 39: finished saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+
+Epoch 39: ReduceLROnPlateau reducing learning rate to 0.0005000000237487257.
+87/87 ━━━━━━━━━━━━━━━━━━━━ 138s 2s/step - accuracy: 0.4974 - loss: 1.2477 - val_accuracy: 0.5700 - val_loss: 1.1070 - learning_rate: 0.0010
+Epoch 40/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 573ms/step - accuracy: 0.5069 - loss: 1.2241  
+Epoch 40: val_accuracy improved from 0.56998 to 0.57305, saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`.
+
+Epoch 40: finished saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+87/87 ━━━━━━━━━━━━━━━━━━━━ 76s 705ms/step - accuracy: 0.5111 - loss: 1.2185 - val_accuracy: 0.5731 - val_loss: 1.0707 - learning_rate: 5.0000e-04
+Epoch 41/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 181ms/step - accuracy: 0.5090 - loss: 1.2175 
+Epoch 41: val_accuracy did not improve from 0.57305
+87/87 ━━━━━━━━━━━━━━━━━━━━ 19s 219ms/step - accuracy: 0.5153 - loss: 1.2113 - val_accuracy: 0.5644 - val_loss: 1.0946 - learning_rate: 5.0000e-04
+Epoch 42/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 172ms/step - accuracy: 0.5122 - loss: 1.2107 
+Epoch 42: val_accuracy did not improve from 0.57305
+87/87 ━━━━━━━━━━━━━━━━━━━━ 18s 204ms/step - accuracy: 0.5198 - loss: 1.2025 - val_accuracy: 0.5640 - val_loss: 1.1019 - learning_rate: 5.0000e-04
+Epoch 43/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 156ms/step - accuracy: 0.5182 - loss: 1.1938 
+Epoch 43: val_accuracy improved from 0.57305 to 0.57721, saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`.
+
+Epoch 43: finished saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+87/87 ━━━━━━━━━━━━━━━━━━━━ 22s 257ms/step - accuracy: 0.5098 - loss: 1.2010 - val_accuracy: 0.5772 - val_loss: 1.0550 - learning_rate: 5.0000e-04
+Epoch 44/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 500ms/step - accuracy: 0.5456 - loss: 1.1829 
+Epoch 44: val_accuracy improved from 0.57721 to 0.58931, saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`.
+
+Epoch 44: finished saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+87/87 ━━━━━━━━━━━━━━━━━━━━ 55s 630ms/step - accuracy: 0.5295 - loss: 1.1921 - val_accuracy: 0.5893 - val_loss: 1.0449 - learning_rate: 5.0000e-04
+Epoch 45/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 454ms/step - accuracy: 0.5257 - loss: 1.1769 
+Epoch 45: val_accuracy did not improve from 0.58931
+87/87 ━━━━━━━━━━━━━━━━━━━━ 51s 581ms/step - accuracy: 0.5284 - loss: 1.1823 - val_accuracy: 0.5886 - val_loss: 1.0430 - learning_rate: 5.0000e-04
+Epoch 46/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 504ms/step - accuracy: 0.5414 - loss: 1.1577 
+Epoch 46: val_accuracy did not improve from 0.58931
+87/87 ━━━━━━━━━━━━━━━━━━━━ 87s 635ms/step - accuracy: 0.5333 - loss: 1.1807 - val_accuracy: 0.5638 - val_loss: 1.0761 - learning_rate: 5.0000e-04
+Epoch 47/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 456ms/step - accuracy: 0.5339 - loss: 1.1974 
+Epoch 47: val_accuracy improved from 0.58931 to 0.59960, saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`.
+
+Epoch 47: finished saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+87/87 ━━━━━━━━━━━━━━━━━━━━ 70s 490ms/step - accuracy: 0.5319 - loss: 1.1988 - val_accuracy: 0.5996 - val_loss: 1.0319 - learning_rate: 5.0000e-04
+Epoch 48/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 158ms/step - accuracy: 0.5223 - loss: 1.1888 
+Epoch 48: val_accuracy improved from 0.59960 to 0.60917, saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+WARNING:absl:You are saving your model as an HDF5 file via `model.save()` or `keras.saving.save_model(model)`. This file format is considered legacy. We recommend using instead the native Keras format, e.g. `model.save('my_model.keras')` or `keras.saving.save_model(model, 'my_model.keras')`.
+
+Epoch 48: finished saving model to C:\Users\Swapnil Mukherjee\Downloads\ml\files\models\saved_model\emotion_model.h5
+87/87 ━━━━━━━━━━━━━━━━━━━━ 17s 191ms/step - accuracy: 0.5324 - loss: 1.1732 - val_accuracy: 0.6092 - val_loss: 0.9965 - learning_rate: 5.0000e-04
+Epoch 49/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 157ms/step - accuracy: 0.5238 - loss: 1.2065 
+Epoch 49: val_accuracy did not improve from 0.60917
+87/87 ━━━━━━━━━━━━━━━━━━━━ 17s 190ms/step - accuracy: 0.5337 - loss: 1.1814 - val_accuracy: 0.5992 - val_loss: 1.0282 - learning_rate: 5.0000e-04
+Epoch 50/50
+87/87 ━━━━━━━━━━━━━━━━━━━━ 0s 157ms/step - accuracy: 0.5285 - loss: 1.1912 
+Epoch 50: val_accuracy did not improve from 0.60917
+87/87 ━━━━━━━━━━━━━━━━━━━━ 16s 189ms/step - accuracy: 0.5340 - loss: 1.1787 - val_accuracy: 0.6000 - val_loss: 1.0211 - learning_rate: 5.0000e-04
+87/87 ━━━━━━━━━━━━━━━━━━━━ 3s 33ms/step - accuracy: 0.6092 - loss: 0.9965 
+
+    Final Validation Accuracy: 0.6092
