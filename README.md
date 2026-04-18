@@ -159,7 +159,9 @@ py -3.11 train_model.py --arch cnn --epochs 60 --batch 64
 # MobileNetV2 (~72% accuracy, slower)
 py -3.11 train_model.py --arch mobilenet --epochs 50 --batch 32
 ```
-
+Note: The face_landmarker.task model is not included due to size.
+Download it from: [official link or Google Drive]
+Place it in the root directory before running the project.
 ---
 
 ## Running
