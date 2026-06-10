@@ -1,4 +1,4 @@
-# MultiFace Emotion Recognition System
+# MultiFace Emotion Recognition and Cartoonification System
 
 A real-time multi-face emotion detection desktop application with animated stickers, Google Noto emoji generation, AnimeGAN2 neural style transfer, Grad-CAM explainability, photo booth, video recording, and a clean Tkinter dark-theme UI.
 
