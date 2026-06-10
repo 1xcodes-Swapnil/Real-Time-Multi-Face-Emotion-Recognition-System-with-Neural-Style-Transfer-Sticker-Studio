@@ -265,7 +265,6 @@ eg
 ---
 ## Authors
 **Swapnil Mukherjee**
-**Vaishnavi Kidav**
 ---
 
 ## Known Limitations
